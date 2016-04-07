@@ -1,0 +1,67 @@
+# {{ ansible_managed }}
+
+#user  nobody;
+worker_processes {{ ansible_processor_count }};
+
+events {
+  worker_connections  1024;
+}
+
+http {
+  include       mime.types;
+  default_type  application/octet-stream;
+
+  access_log {{ nginx_log_dir }}/access.log combined;
+  error_log  {{ nginx_log_dir }}/error.log;
+
+  #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+  #                  '$status $body_bytes_sent "$http_referer" '
+  #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+  server_tokens off;
+  sendfile off;
+  keepalive_timeout 65;
+  gzip off;
+
+{% for upstream in nginx_config.upstreams %}
+  upstream {{ upstream.name }} {
+    server {{ upstream.server | default('localhost') }}:{{ upstream.port }};
+    keepalive {{ upstream.keepalive | default(8) }};
+  }
+{% endfor %}
+
+{% for server in nginx_config.servers %}
+  server {
+    listen {{ server.port }}{% if server.tls %} ssl{% endif %};
+    server_name {{ server.name }};
+    {% if server.logs %}
+    access_log {{ nginx_log_dir }}/{{ server.logs }}_access.log combined;
+    error_log  {{ nginx_log_dir }}/{{ server.logs }}_error.log;
+    {% endif %}
+    {% if server.redirect %}
+
+    return 301 {{ server.redirect }};
+    {% endif %}
+    {% if server.tls %}
+
+    ssl_prefer_server_ciphers on;
+    ssl_protocols       {{ tls_protocols | join(' ') }};
+    ssl_ciphers         {{ tls_ciphers | join(':') }};
+    ssl_certificate     {{ pki_chained_cert_path }};
+    ssl_certificate_key {{ pki_key_path }};
+    ssl_session_cache   shared:SSL:50m;
+    ssl_session_timeout 5m;
+    {% endif %}
+    {% for location in server.locations %}
+
+    location {{ location.path }} {
+      {% for k, v in location.items() %}
+      {% if k != 'path' %}
+      {{ k }} {{ v }}
+      {% endif %}
+      {% endfor %}
+    }
+    {% endfor %}
+  }
+  {% endfor %}
+}

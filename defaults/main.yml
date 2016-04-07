@@ -1,0 +1,30 @@
+---
+rc_conf_dir: /etc/rc.conf.d
+
+nginx_conf_dir: /usr/local/etc/nginx
+nginx_conf_file: "{{ nginx_conf_dir }}/nginx.conf"
+nginx_site_dir: "{{ nginx_conf_dir }}/sites-enabled"
+
+nginx_log_dir: /var/log/nginx
+
+nginx_proxy_scheme: http
+nginx_proxy_address: localhost
+nginx_proxy_port: 8080
+
+nginx_config:
+  upstreams:
+    - name: backend
+      server: "{{ nginx_proxy_address }}"
+      port: "{{ nginx_proxy_port }}"
+      keepalive: 16
+  servers:
+    - port: 80
+      name: "{{ server_name }}"
+      redirect: "https://{{ server_name }}$request_uri"
+    - port: 443
+      tls: true
+      name: "{{ server_name }}"
+      logs: backend
+      locations:
+        - path: /
+          proxy_pass: "{{ nginx_proxy_scheme }}://backend"
