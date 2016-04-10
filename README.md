@@ -8,5 +8,5 @@ set the `nginx_proxy_{scheme,address,port}` variables. These default to `http`,
 `localhost`, and `8080` respectively.
 
 For more control over the nginx config, set the `nginx_config` to a dictionary
-with `upstreams` and `servers` entries. See the `[defaults](defaults/main.yml)`
+with `upstreams` and `servers` entries. See the [`defaults`](defaults/main.yml)
 file for examples.
