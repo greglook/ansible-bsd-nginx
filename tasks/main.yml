@@ -39,7 +39,7 @@
   notify:
     - restart nginx
 
-- name: Ensure nginx is running
+- name: Start nginx
   service:
     name: nginx
-    state: running
+    state: started
