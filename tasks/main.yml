@@ -31,7 +31,7 @@
 
 - name: Write site configuration
   template:
-    src: "{{ nginx_conf_src }}"
+    src: nginx.conf.j2
     dest: "{{ nginx_conf_file }}"
     owner: root
     group: wheel
