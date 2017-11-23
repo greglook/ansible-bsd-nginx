@@ -32,17 +32,17 @@ http {
 
 {% for server in nginx_config.servers %}
   server {
-    listen {{ server.port }}{% if server.tls %} ssl{% endif %};
+    listen {{ server.port }}{% if server.tls | default(False) %} ssl{% endif %};
     server_name {{ server.name }};
-    {% if server.logs %}
+{% if server.logs | default(False) %}
     access_log {{ nginx_log_dir }}/{{ server.logs }}_access.log combined;
     error_log  {{ nginx_log_dir }}/{{ server.logs }}_error.log;
-    {% endif %}
-    {% if server.redirect %}
+{% endif %}
+{% if server.redirect | default(None) %}
 
     return 301 {{ server.redirect }};
-    {% endif %}
-    {% if server.tls %}
+{% endif %}
+{% if server.tls | default(False) %}
 
     ssl_prefer_server_ciphers on;
     ssl_protocols       {{ tls_protocols | join(' ') }};
@@ -51,17 +51,23 @@ http {
     ssl_certificate_key {{ pki_key_path }};
     ssl_session_cache   shared:SSL:50m;
     ssl_session_timeout 5m;
-    {% endif %}
-    {% for location in server.locations %}
+{% endif %}
+{% for location in server.locations | default([]) %}
 
     location {{ location.path }} {
-      {% for k, v in location.items() %}
-      {% if k != 'path' %}
-      {{ k }} {{ v }}
-      {% endif %}
-      {% endfor %}
+{% for k, v in location.items() %}
+{% if k != 'path' %}
+{% if v is string %}
+      {{ k }} {{ v }};
+{% else %}
+{% for e in v %}
+      {{ k }} {{ e }};
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}
     }
-    {% endfor %}
+{% endfor %}
   }
-  {% endfor %}
+{% endfor %}
 }
